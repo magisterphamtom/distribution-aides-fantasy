@@ -1,0 +1,291 @@
+/* Distribution d'aides de jeu — Fantasy (D&D 5e) — magisterphamtom — MIT */
+@font-face { font-family: "RF Cinzel Deco"; src: url("../fonts/CinzelDecorative-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "RF Cinzel"; src: url("../fonts/Cinzel-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "RF Cinzel"; src: url("../fonts/Cinzel-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "RF Garamond"; src: url("../fonts/EBGaramond-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "RF Garamond"; src: url("../fonts/EBGaramond-Italic.woff2") format("woff2"); font-style: italic; font-display: swap; }
+
+/* =================================================================== */
+/*  Fenêtre du Gardien                                                 */
+/* =================================================================== */
+
+.rf-app .window-content { padding: 10px 12px; }
+.rf-form { display: flex; flex-direction: column; gap: 8px; }
+
+.rf-drop {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
+  min-height: 96px; padding: 10px 12px; text-align: center;
+  border: 2px dashed color-mix(in srgb, var(--color-text-primary, #ddd) 35%, transparent);
+  border-radius: 8px; transition: background .15s, border-color .15s;
+}
+.rf-drop .rf-drop-ico { font-size: 1.6rem; opacity: .6; width: 100%; }
+.rf-drop:not(.has-doc) > span { width: 100%; opacity: .85; }
+.rf-drop > button { width: auto; flex: 0 0 auto; }
+.rf-drop.rf-over { border-color: #c9a227; background: rgba(201, 162, 39, .12); }
+.rf-drop.has-doc { justify-content: flex-start; text-align: left; flex-wrap: nowrap; border-style: solid; }
+.rf-prev-img { width: 84px; height: 84px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(0,0,0,.4); flex: 0 0 auto; }
+.rf-prev-icon { width: 84px; height: 84px; display: grid; place-items: center; font-size: 2.2rem; opacity: .7; flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--color-text-primary, #ddd) 25%, transparent); border-radius: 4px; }
+.rf-prev-info { display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; min-width: 0; }
+.rf-prev-kind { font-weight: 600; }
+.rf-prev-hint { font-size: .8rem; opacity: .65; }
+.rf-icon { flex: 0 0 28px !important; width: 28px; height: 28px; padding: 0; align-self: flex-start; }
+
+.rf-players, .rf-opts { margin: 0; padding: 6px 10px 8px; border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--color-text-primary, #ddd) 20%, transparent); }
+.rf-players legend { display: flex; align-items: center; gap: 8px; padding: 0 4px; font-weight: 600; }
+.rf-legend-tools { display: inline-flex; gap: 4px; }
+.rf-legend-tools button { height: 22px; line-height: 20px; padding: 0 8px; font-size: .8rem; width: auto; }
+.rf-player { display: flex; align-items: center; gap: 8px; padding: 3px 2px; cursor: pointer; }
+.rf-player input { margin: 0; flex: 0 0 auto; }
+.rf-player.offline { opacity: .6; }
+.rf-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; box-shadow: 0 0 0 1px rgba(0,0,0,.5); }
+.rf-pname { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rf-pname em { opacity: .7; }
+.rf-ok { color: #6fbf73; } .rf-new { color: #c9a227; } .rf-warn { color: #e57c4a; }
+.rf-hint, .rf-empty { margin: 4px 0 0; font-size: .8rem; opacity: .75; }
+.rf-opts { display: flex; flex-direction: column; gap: 2px; }
+.rf-opts label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.rf-opts input { margin: 0; }
+.rf-foot { display: flex; }
+.rf-go { flex: 1; height: 36px; font-weight: 600; }
+
+/* =================================================================== */
+/*  Trace dans le chat                                                 */
+/* =================================================================== */
+
+.rf-chat { padding: 6px 8px; border-left: 3px solid #c9a227; background: rgba(201, 162, 39, .08); border-radius: 3px; }
+.rf-chat > i { color: #a8841b; margin-right: 4px; }
+.rf-chat em { opacity: .8; }
+.rf-chat-sub { font-size: .8em; opacity: .7; }
+
+/* =================================================================== */
+/*  Apparition — commun                                                */
+/* =================================================================== */
+
+#rf-reveal { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; pointer-events: auto; }
+#rf-reveal .rf-veil { position: absolute; inset: 0; background: rgba(5, 6, 10, .72); opacity: 0; transition: opacity .4s; cursor: pointer; }
+#rf-reveal.rf-play .rf-veil { opacity: 1; }
+#rf-reveal .rf-stage { position: relative; width: min(760px, 92vw); height: min(84vh, 760px); display: grid; place-items: center; pointer-events: none; }
+#rf-reveal .rf-envelope, #rf-reveal .rf-doc { pointer-events: auto; }
+
+#rf-reveal .rf-doc {
+  position: absolute; inset: 0; margin: auto; width: 100%; max-height: 100%; height: fit-content;
+  display: flex; flex-direction: column; overflow: hidden; opacity: 0;
+}
+#rf-reveal .rf-doc-head { display: flex; flex-direction: column; gap: 2px; padding: 14px 20px 10px; flex: 0 0 auto; }
+#rf-reveal .rf-doc-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 0 20px; display: flex; justify-content: center; }
+#rf-reveal .rf-doc-img { max-width: 100%; max-height: 58vh; object-fit: contain; display: block; border: 0; }
+#rf-reveal .rf-doc-text { width: 100%; max-height: 58vh; overflow: auto; padding: 4px 2px 12px; line-height: 1.5; }
+#rf-reveal .rf-doc-text img { max-width: 100%; height: auto; }
+#rf-reveal .rf-doc-text :is(h1, h2, h3, h4, h5, h6) { color: inherit; border-bottom: 0; text-shadow: none; margin: .4em 0 .3em; font-family: inherit; }
+#rf-reveal .rf-doc-empty { opacity: .75; font-style: italic; }
+#rf-reveal .rf-doc-foot { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 20px 16px; flex: 0 0 auto; }
+#rf-reveal .rf-doc-foot button { width: auto; flex: 0 0 auto; padding: 0 14px; height: 34px; cursor: pointer; }
+
+#rf-reveal.rf-leaving { animation: rf-out .35s ease forwards; }
+@keyframes rf-out { to { opacity: 0; transform: scale(.98); } }
+
+
+/* =================================================================== */
+/*  Fantasy : parchemin scellé qui se déroule                          */
+/* =================================================================== */
+
+.rf-fantasy { --ink: #3b2412; --crimson: #8e1b1b; --gold: #d4a437; font-family: "RF Garamond", serif; }
+.rf-fantasy .rf-veil {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(212, 164, 55, .16), transparent 55%),
+    radial-gradient(ellipse at center, rgba(20, 10, 4, .72), rgba(6, 3, 1, .93));
+}
+
+/* Lueur dorée quand le sceau se brise */
+.rf-glow {
+  position: absolute; left: 50%; top: 50%; width: 520px; height: 520px; margin: -260px 0 0 -260px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 120, .55), rgba(212, 164, 55, .18) 40%, transparent 68%);
+  opacity: 0; transform: scale(.4); pointer-events: none;
+}
+.rf-fantasy.rf-play .rf-glow { animation: rf-glow 1.3s 1.05s ease-out forwards; }
+
+/* Poussière d'or */
+.rf-motes { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.rf-motes i {
+  position: absolute; bottom: -10px; width: 4px; height: 4px; border-radius: 50%;
+  background: #ffd98a; box-shadow: 0 0 8px 2px rgba(255, 200, 90, .7); opacity: 0;
+}
+.rf-fantasy.rf-play .rf-motes i { animation: rf-mote 5s linear infinite; }
+
+/* 1. Le parchemin roulé, noué d'un ruban et scellé */
+.rf-roll {
+  position: absolute; left: 50%; top: 50%; width: min(460px, 80vw); height: 74px;
+  transform: translate(-50%, -120vh) rotate(-10deg); pointer-events: none;
+}
+.rf-fantasy.rf-play .rf-roll { animation: rf-roll-in 1s cubic-bezier(.25,.9,.3,1.15) forwards, rf-roll-out .35s 1.45s ease-in forwards; }
+.rf-roll-body {
+  position: absolute; inset: 0; border-radius: 37px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.35), transparent 30%, transparent 60%, rgba(60, 30, 5, .45)),
+    repeating-linear-gradient(90deg, rgba(120, 80, 30, .06) 0 3px, transparent 3px 9px),
+    linear-gradient(90deg, #c9a46a, #ecd6a6 18%, #f3e2b8 50%, #e6cd99 82%, #b88f55);
+  box-shadow: 0 22px 40px rgba(0, 0, 0, .6), inset 0 -6px 10px rgba(90, 50, 10, .35);
+}
+.rf-roll-body::before, .rf-roll-body::after { /* spirales des extrémités */
+  content: ""; position: absolute; top: 6px; bottom: 6px; width: 30px; border-radius: 50%;
+  background: radial-gradient(ellipse at center, #8a6534 0 18%, #e9d3a2 20% 34%, #a9814a 36% 44%, #efdcac 46% 62%, #b58c52 64%);
+}
+.rf-roll-body::before { left: 4px; } .rf-roll-body::after { right: 4px; }
+.rf-ribbon {
+  position: absolute; left: 50%; top: -6px; bottom: -6px; width: 34px; margin-left: -17px;
+  background: linear-gradient(90deg, #5e0f0f, #a32424 40%, #7d1616);
+  box-shadow: 0 2px 6px rgba(0,0,0,.4);
+}
+.rf-ribbon::after { /* pans du ruban */
+  content: ""; position: absolute; left: 4px; top: 100%; width: 26px; height: 38px;
+  background: linear-gradient(90deg, #5e0f0f, #a32424 40%, #7d1616);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+}
+.rf-seal {
+  position: absolute; left: 50%; top: 50%; width: 66px; height: 66px; margin: -33px 0 0 -33px;
+  display: grid; place-items: center;
+}
+.rf-seal-half {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  border-radius: 46% 54% 50% 50% / 52% 48% 52% 48%;
+  background: radial-gradient(circle at 38% 32%, #d64a3a, #9c1c18 45%, #5d0b0b 85%);
+  box-shadow: 0 4px 10px rgba(0,0,0,.55), inset 0 0 0 5px rgba(0,0,0,.12), inset 0 0 0 9px rgba(255, 120, 100, .12);
+  color: rgba(255, 210, 160, .55); font-size: 1.55rem; text-shadow: 0 -1px 0 rgba(0,0,0,.5), 0 1px 0 rgba(255,180,150,.25);
+}
+.rf-seal-l { clip-path: polygon(0 0, 52% 0, 44% 35%, 56% 60%, 46% 100%, 0 100%); }
+.rf-seal-r { clip-path: polygon(52% 0, 100% 0, 100% 100%, 46% 100%, 56% 60%, 44% 35%); }
+.rf-fantasy.rf-play .rf-seal { animation: rf-shake .35s .95s ease-in-out 1; }
+.rf-fantasy.rf-play .rf-seal-l { animation: rf-crack-l .5s 1.3s ease-in forwards; }
+.rf-fantasy.rf-play .rf-seal-r { animation: rf-crack-r .5s 1.3s ease-in forwards; }
+
+/* 2. Le parchemin se déroule entre deux rouleaux de bois */
+.rf-fantasy .rf-doc { overflow: visible; width: min(720px, 100%); }
+.rf-fantasy.rf-play .rf-doc { animation: rf-show .01s 1.5s forwards; }
+.rf-sheet {
+  position: relative; display: flex; flex-direction: column; min-height: 0; max-height: calc(min(84vh, 760px) - 30px);
+  margin: 0 18px; color: var(--ink);
+  background:
+    radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(120, 70, 20, .28) 100%),
+    radial-gradient(circle at 20% 15%, rgba(160, 110, 40, .12), transparent 30%),
+    radial-gradient(circle at 80% 75%, rgba(140, 90, 30, .14), transparent 32%),
+    repeating-linear-gradient(0deg, rgba(110, 70, 20, .035) 0 2px, transparent 2px 5px),
+    linear-gradient(180deg, #f1e0b6, #ead39f 50%, #e4c991);
+  box-shadow: inset 0 0 40px rgba(110, 60, 10, .35), 0 20px 50px rgba(0, 0, 0, .55);
+  clip-path: inset(0 0 100% 0);
+}
+.rf-fantasy.rf-play .rf-sheet { animation: rf-unroll 1.15s 1.5s cubic-bezier(.45,.05,.3,1) forwards; }
+.rf-rod {
+  position: absolute; left: 0; right: 0; height: 24px; z-index: 3; border-radius: 12px; pointer-events: none;
+  background: linear-gradient(180deg, #a06a35, #6b3f17 45%, #3e220a 80%, #5a3412);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, .5);
+}
+.rf-rod::before, .rf-rod::after { /* embouts dorés */
+  content: ""; position: absolute; top: -5px; width: 22px; height: 34px; border-radius: 6px;
+  background: linear-gradient(180deg, #ffe7a3, #d4a437 40%, #8a6414 85%);
+  box-shadow: 0 3px 6px rgba(0,0,0,.45), inset 0 0 0 2px rgba(110, 70, 10, .35);
+}
+.rf-rod::before { left: -10px; } .rf-rod::after { right: -10px; }
+.rf-rod-top { top: -12px; }
+.rf-rod-bot { top: -12px; }
+.rf-fantasy.rf-play .rf-rod-bot { animation: rf-rod 1.15s 1.5s cubic-bezier(.45,.05,.3,1) forwards; }
+
+/* Contenu calligraphié */
+#rf-reveal.rf-fantasy .rf-doc-head { align-items: center; text-align: center; padding: 34px 40px 8px; }
+.rf-fantasy .rf-doc-kicker {
+  font-family: "RF Cinzel", serif; font-weight: 700; font-size: .78rem; letter-spacing: .35em; text-transform: uppercase; color: var(--crimson);
+}
+.rf-fantasy .rf-doc-title {
+  font-family: "RF Cinzel Deco", "RF Cinzel", serif; font-weight: 700; font-size: 1.85rem; line-height: 1.15; color: #2c1608;
+  text-shadow: 0 1px 0 rgba(255, 240, 200, .6);
+}
+.rf-fantasy .rf-doc-note { font-style: italic; font-size: 1.05rem; color: #5a3a1c; }
+.rf-orn {
+  display: flex; align-items: center; gap: 10px; width: 70%; margin: 6px auto 2px; color: var(--crimson); font-size: .9rem;
+}
+.rf-orn::before, .rf-orn::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #9a6b2a, transparent); }
+#rf-reveal.rf-fantasy .rf-doc-body { padding: 6px 40px 0; }
+.rf-fantasy .rf-doc-img {
+  border: 3px solid #7a5426; outline: 1px solid rgba(212, 164, 55, .8); outline-offset: -7px;
+  box-shadow: 0 4px 14px rgba(60, 30, 5, .45); filter: sepia(.12);
+}
+.rf-fantasy .rf-doc-text { font-size: 1.08rem; color: var(--ink); }
+.rf-fantasy .rf-doc-text > p:first-child::first-letter {
+  float: left; font-family: "RF Cinzel Deco", serif; font-size: 3.1em; line-height: .85; margin: .06em .1em 0 0; color: var(--crimson);
+}
+.rf-fantasy .rf-doc-text :is(h1, h2, h3) { font-family: "RF Cinzel", serif; color: var(--crimson); }
+.rf-fantasy .rf-doc-text a { color: var(--crimson); }
+.rf-fantasy .rf-doc-empty { color: #5a3a1c; }
+.rf-fantasy .rf-doc-head, .rf-fantasy .rf-doc-body, .rf-fantasy .rf-doc-foot { opacity: 0; }
+.rf-fantasy.rf-play :is(.rf-doc-head, .rf-doc-body, .rf-doc-foot) { animation: rf-ink .8s 2.3s ease forwards; }
+#rf-reveal.rf-fantasy .rf-doc-foot { justify-content: center; padding: 16px 40px 30px; }
+.rf-fantasy .rf-doc-foot button {
+  font-family: "RF Cinzel", serif; font-weight: 700; font-size: .82rem; letter-spacing: .06em;
+  color: #fbe9c0; background: linear-gradient(180deg, #a52a22, #6e1410); border: 1px solid #d4a437; border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.35), inset 0 1px 0 rgba(255, 200, 160, .3);
+}
+.rf-fantasy .rf-doc-foot button:hover { filter: brightness(1.12); }
+.rf-fantasy .rf-doc-foot button[data-rf="open"] { color: #3b2412; background: linear-gradient(180deg, #f1dca8, #d9bb7c); border-color: #8a6414; }
+.rf-fantasy .rf-doc-imgwrap { border-radius: 0; }
+
+/* Trace dans le chat, aux couleurs fantasy */
+.rf-chat { border-left-color: #8e1b1b; background: rgba(142, 27, 27, .07); }
+.rf-chat > i { color: #8e1b1b; }
+
+@keyframes rf-roll-in {
+  0%   { transform: translate(-50%, -120vh) rotate(-10deg); }
+  70%  { transform: translate(-50%, -50%) rotate(2deg); }
+  100% { transform: translate(-50%, -50%) rotate(0); }
+}
+@keyframes rf-roll-out { to { transform: translate(-50%, -50%) scale(1.04); opacity: 0; } }
+@keyframes rf-shake { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-8deg); } 50% { transform: rotate(7deg); } 75% { transform: rotate(-4deg); } }
+@keyframes rf-crack-l { to { transform: translate(-26px, 70px) rotate(-40deg); opacity: 0; } }
+@keyframes rf-crack-r { to { transform: translate(26px, 80px) rotate(35deg); opacity: 0; } }
+@keyframes rf-glow { 0% { opacity: 0; transform: scale(.4); } 35% { opacity: 1; } 100% { opacity: 0; transform: scale(1.6); } }
+@keyframes rf-show { to { opacity: 1; } }
+@keyframes rf-unroll { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes rf-rod { from { top: -12px; } to { top: calc(100% - 12px); } }
+@keyframes rf-ink { from { opacity: 0; filter: blur(2px); } to { opacity: 1; filter: blur(0); } }
+@keyframes rf-mote { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: .9; } 100% { transform: translateY(-105vh) translateX(30px); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  #rf-reveal.rf-play :is(.rf-roll, .rf-glow, .rf-motes) { display: none; }
+  #rf-reveal.rf-play :is(.rf-doc, .rf-sheet, .rf-rod-bot, .rf-doc-head, .rf-doc-body, .rf-doc-foot) { animation-duration: .01s !important; animation-delay: 0s !important; }
+}
+
+/* =================================================================== */
+/*  Zoom & déplacement sur les images (ex-module Zoom & Pan)            */
+/* =================================================================== */
+
+.rf-zoom-wrap { position: relative; overflow: hidden; touch-action: none; }
+.rf-zoom-img { transform-origin: 0 0; will-change: transform; cursor: grab; user-select: none; -webkit-user-drag: none; }
+.rf-zoom-wrap.rf-zoom-drag .rf-zoom-img { cursor: grabbing; }
+.rf-zoom-bar {
+  position: absolute; right: 10px; bottom: 10px; z-index: 10; display: flex; gap: 4px; padding: 4px;
+  background: rgba(0, 0, 0, .55); border-radius: 6px; opacity: .55; transition: opacity .15s;
+}
+.rf-zoom-wrap:hover .rf-zoom-bar { opacity: 1; }
+.rf-zoom-btn {
+  width: 32px !important; height: 32px; flex: 0 0 32px !important; padding: 0 !important; margin: 0;
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+  background: rgba(255, 255, 255, .1) !important; border: 1px solid rgba(255, 255, 255, .35) !important;
+  border-radius: 4px !important; color: #fff !important; cursor: pointer; box-shadow: none !important;
+}
+.rf-zoom-btn:hover { background: rgba(255, 255, 255, .28) !important; }
+.rf-zoom-btn i { pointer-events: none; margin: 0; }
+
+/* Dans l'apparition : le cadre épouse l'image pour un zoom centré sur le curseur */
+#rf-reveal .rf-doc-imgwrap { display: inline-block; max-width: 100%; line-height: 0; align-self: flex-start; border-radius: inherit; }
+
+.rf-ping { position: absolute; transform: translate(-50%, -50%); pointer-events: none; z-index: 20; }
+.rf-ping-dot, .rf-ping-ring { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; border-radius: 50%; transform: translate(-50%, -50%); }
+.rf-ping-dot { background: var(--ping-color, #ff6400); box-shadow: 0 0 6px var(--ping-color, #ff6400); }
+.rf-ping-ring { border: 2px solid var(--ping-color, #ff6400); animation: rf-ping 1.2s ease-out infinite; }
+.rf-ping-late { animation-delay: .5s; }
+@keyframes rf-ping { 0% { width: 10px; height: 10px; opacity: .9; } 100% { width: 70px; height: 70px; opacity: 0; } }
+.rf-ping-label {
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+  font-size: 11px; font-weight: 600; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000;
+  background: rgba(0, 0, 0, .45); padding: 1px 5px; border-radius: 3px;
+}

@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mettre à jour la version et le lien de téléchargement
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          DOWNLOAD="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/module.zip"
+          jq --arg v "$VERSION" --arg d "$DOWNLOAD" '.version = $v | .download = $d' module.json > module.tmp && mv module.tmp module.json
+
+      - name: Créer module.zip
+        run: |
+          FILES=""
+          for f in module.json scripts styles templates fonts icons lang packs layout.json README.md LICENSE; do
+            [ -e "$f" ] && FILES="$FILES $f"
+          done
+          zip -r module.zip $FILES
+
+      - name: Joindre les fichiers à la release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            module.json
+            module.zip
