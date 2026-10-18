@@ -25,5 +25,11 @@
   "download": "https://github.com/magisterphamtom/distribution-aides-fantasy/releases/download/v1.0.0/module.zip",
   "bugs": "https://github.com/magisterphamtom/distribution-aides-fantasy/issues",
   "readme": "https://github.com/magisterphamtom/distribution-aides-fantasy/blob/main/README.md",
-  "license": "https://github.com/magisterphamtom/distribution-aides-fantasy/blob/main/LICENSE"
+  "license": "https://github.com/magisterphamtom/distribution-aides-fantasy/blob/main/LICENSE",
+  "media": [
+    {
+      "type": "cover",
+      "url": "https://raw.githubusercontent.com/magisterphamtom/distribution-aides-fantasy/main/.github/banner.png"
+    }
+  ]
 }
