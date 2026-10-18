@@ -1,3 +1,5 @@
+<p align="center"><img src=".github/banner.png" alt="distribution-aides-fantasy" width="100%"></p>
+
 # Distribution d'aides de jeu — Fantasy
 
 Module Foundry VTT (v13 / v14) de magisterphamtom, pensé pour **D&D 5e** (fonctionne avec tout système).
