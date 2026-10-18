@@ -15,7 +15,7 @@ jobs:
 
       - name: Mettre à jour la version et le lien de téléchargement
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${GITHUB_REF_NAME#[vV]}"
           DOWNLOAD="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/module.zip"
           jq --arg v "$VERSION" --arg d "$DOWNLOAD" '.version = $v | .download = $d' module.json > module.tmp && mv module.tmp module.json
 
