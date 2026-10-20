@@ -46,6 +46,9 @@ Hooks.once("ready", () => {
     try {
       if (handleZoomSocket(data)) return;
       if (data?.type === "handout" && data.users?.includes(game.user.id)) Reveal.show(data);
+      else if (data?.type === "fileDone" && data.userId === game.user.id) Reveal.filed(data);
+      // Seul le MJ actif range à la demande d'un joueur (et seulement pour une remise qu'il a faite)
+      else if ((data?.type === "fileRequest" || data?.type === "fileSkip") && game.user.isGM && game.users.activeGM?.isSelf) handleChoice(data);
     } catch (err) {
       console.error(`${ID} | réception`, err);
     }
@@ -75,6 +78,29 @@ function logbookFor(user) {
   const charName = user.character?.name?.toLowerCase();
   return candidates.find((j) => charName && j.name.toLowerCase().includes(charName.split(" ")[0])) ?? candidates[0];
 }
+
+/** Recopie des pages dans le journal d'aventure d'un joueur. Retourne l'UUID de la première page, ou null. */
+async function fileForUser(user, pages, note) {
+  const book = await ensureLogbook(user);
+  if (!book) return null;
+  const stamp = new Date().toLocaleDateString("fr-FR");
+  const created = await book.createEmbeddedDocuments("JournalEntryPage", pages.map((p) => ({
+    ...p,
+    flags: { ...(p.flags ?? {}), [ID]: { received: stamp, note: note || "" } }
+  })));
+  return created[0]?.uuid ?? null;
+}
+
+/** Ce que le joueur voit d'une page quand rien n'est encore rangé : image ou texte brut. */
+function displayOf(page) {
+  if (!page) return null;
+  if (page.type === "image" && page.src) return { type: "image", src: page.src };
+  const html = page.text?.content;
+  return html ? { type: "text", html } : null;
+}
+
+/** Remises en attente d'un choix du joueur (mémoire du MJ) : offerId → { users, pages, note, title, filed } */
+const offers = new Map();
 
 async function ensureLogbook(user) {
   const existing = logbookFor(user);
@@ -120,22 +146,20 @@ async function distribute(handout, options) {
     });
   }
 
+  // Le joueur décide lui-même de ranger : possible seulement si le document apparaît à l'écran
+  const choice = !!(options.file && options.choice && options.reveal);
+  const offerId = choice ? foundry.utils.randomID() : null;
+  if (choice) offers.set(offerId, { users: users.map((u) => u.id), pages, note: options.note || "", title: handout.title, filed: new Map() });
+
   const delivered = {};
   const failed = [];
   for (const user of users) {
     let pageUuid = null;
     try {
-      // 1. Rangement dans le journal d'aventure
-      if (options.file) {
-        const book = await ensureLogbook(user);
-        if (book) {
-          const stamp = new Date().toLocaleDateString("fr-FR");
-          const created = await book.createEmbeddedDocuments("JournalEntryPage", pages.map((p) => ({
-            ...p,
-            flags: { ...(p.flags ?? {}), [ID]: { received: stamp, note: options.note || "" } }
-          })));
-          pageUuid = created[0]?.uuid ?? null;
-        } else failed.push(`${user.name} (pas de journal d'aventure)`);
+      // 1. Rangement dans le journal d'aventure (automatique, sauf si le joueur choisit)
+      if (options.file && !choice) {
+        pageUuid = await fileForUser(user, pages, options.note);
+        if (!pageUuid) failed.push(`${user.name} (pas de journal d'aventure)`);
       }
       // 2. Accès en lecture au document d'origine
       if (options.grant && source) {
@@ -162,7 +186,10 @@ async function distribute(handout, options) {
       imgName: handout.preview || handout.src || null,
       kind: handout.kind,
       src: handout.kind === "image" ? handout.src : null,
-      sourceUuid: handout.uuid ?? null
+      sourceUuid: handout.uuid ?? null,
+      choice,
+      offerId,
+      display: choice ? displayOf(pages[0]) : null
     };
     game.socket.emit(SOCKET, payload);
     if (options.preview) Reveal.show({ ...payload, users: [game.user.id], preview: true });
@@ -173,7 +200,7 @@ async function distribute(handout, options) {
     const names = users.filter((u) => u.id in delivered).map((u) => esc(u.character?.name ?? u.name)).join(", ");
     if (names) {
       await ChatMessage.create({
-        content: `<div class="rf-chat"><i class="fa-solid fa-envelope-open-text"></i> <b>${esc(handout.title)}</b> remis à ${names}${options.note ? `<br><em>${esc(options.note)}</em>` : ""}${options.file ? `<br><span class="rf-chat-sub">Rangé dans le journal d'aventure.</span>` : ""}</div>`,
+        content: `<div class="rf-chat"><i class="fa-solid fa-envelope-open-text"></i> <b>${esc(handout.title)}</b> remis à ${names}${options.note ? `<br><em>${esc(options.note)}</em>` : ""}${options.file ? `<br><span class="rf-chat-sub">${choice ? "Rangement au choix du joueur (journal d'aventure)." : "Rangé dans le journal d'aventure."}</span>` : ""}</div>`,
         whisper: [...new Set([...game.users.filter((u) => u.isGM).map((u) => u.id), ...Object.keys(delivered)])]
       });
     }
@@ -182,6 +209,44 @@ async function distribute(handout, options) {
   const ok = Object.keys(delivered).length;
   if (failed.length) ui.notifications.warn(`Remis à ${ok} joueur(s). Problème : ${failed.join(", ")}.`);
   else ui.notifications.info(`« ${handout.title} » remis à ${ok} joueur(s).`);
+}
+
+/**
+ * Choix du joueur, côté MJ : « Ranger » crée la copie dans son journal d'aventure,
+ * « Ne pas ranger » laisse une trace dans le chat. Les pages viennent de la remise gardée en mémoire,
+ * jamais du message du joueur.
+ */
+async function handleChoice(data) {
+  const offer = offers.get(data.offerId);
+  const user = game.users.get(data.userId);
+  const reply = (extra) => game.socket.emit(SOCKET, { type: "fileDone", userId: data.userId, offerId: data.offerId, ...extra });
+  const whisper = () => [...new Set([...game.users.filter((u) => u.isGM).map((u) => u.id), data.userId])];
+  const trace = (html) => game.settings.get(ID, "chatLog")
+    ? ChatMessage.create({ content: `<div class="rf-chat">${html}</div>`, whisper: whisper() })
+    : null;
+
+  if (data.type === "fileRequest" && (!offer || !user || !offer.users.includes(user.id))) {
+    return reply({ ok: false, reason: "expired" });
+  }
+  if (!offer || !user || !offer.users.includes(user.id)) return;
+  const who = esc(user.character?.name ?? user.name);
+
+  if (data.type === "fileSkip") {
+    if (!offer.filed.has(user.id)) await trace(`<i class="fa-solid fa-envelope"></i> ${who} n'a pas rangé <b>${esc(offer.title)}</b>.`);
+    return;
+  }
+
+  if (offer.filed.has(user.id)) return reply({ ok: true, pageUuid: offer.filed.get(user.id) });
+  try {
+    const pageUuid = await fileForUser(user, offer.pages, offer.note);
+    if (!pageUuid) return reply({ ok: false, reason: "nobook" });
+    offer.filed.set(user.id, pageUuid);
+    reply({ ok: true, pageUuid });
+    await trace(`<i class="fa-solid fa-envelope-open-text"></i> ${who} a rangé <b>${esc(offer.title)}</b> dans son journal d'aventure.`);
+  } catch (err) {
+    console.error(`${ID} | rangement à la demande de ${user.name}`, err);
+    reply({ ok: false, reason: "error" });
+  }
 }
 
 /* ================================================================== */
@@ -199,6 +264,13 @@ const Reveal = {
     const imgHtml = (src) => { imgSrc = src; return `<div class="rf-doc-imgwrap"><img class="rf-doc-img" src="${esc(src)}" alt=""></div>`; };
     if (data.kind === "image") {
       body = imgHtml(data.src);
+    } else if (data.choice) {
+      // Rien n'est encore rangé : on montre le contenu envoyé par le MJ
+      if (data.display?.type === "image") body = imgHtml(data.display.src);
+      else if (data.display?.type === "text") {
+        const html = await TextEditorImpl().enrichHTML(data.display.html, { secrets: false });
+        body = `<div class="rf-doc-text">${html}</div>`;
+      } else body = `<p class="rf-doc-empty">Ce document n'a pas d'aperçu.</p>`;
     } else {
       const page = (pageUuid ? await fromUuid(pageUuid) : null) ?? (data.sourceUuid ? await fromUuid(data.sourceUuid) : null);
       const first = page?.documentName === "JournalEntry" ? page.pages.contents[0] : page;
@@ -212,7 +284,12 @@ const Reveal = {
     const el = document.createElement("div");
     el.id = "rf-reveal";
     el.className = "rf-reveal rf-fantasy";
-    const foot = `<footer class="rf-doc-foot">
+    const foot = data.choice
+      ? `<footer class="rf-doc-foot rf-choice">
+            <button type="button" data-rf="file"><i class="fa-solid fa-book-bookmark"></i> Ranger dans mon journal d'aventure</button>
+            <button type="button" data-rf="skip"><i class="fa-solid fa-xmark"></i> Ne pas ranger</button>
+          </footer>`
+      : `<footer class="rf-doc-foot">
             ${pageUuid ? `<button type="button" data-rf="open"><i class="fa-solid fa-book-open"></i> Ouvrir dans mon journal d'aventure</button>` : ""}
             <button type="button" data-rf="close"><i class="fa-solid fa-check"></i> ${pageUuid ? "Ranger" : "Fermer"}</button>
           </footer>`;
@@ -247,13 +324,36 @@ const Reveal = {
           <div class="rf-rod rf-rod-bot"></div>
         </div>
       </div>`;
+    if (data.choice) el.dataset.offer = data.offerId ?? "";
     el.addEventListener("click", async (ev) => {
       const b = ev.target.closest("[data-rf]");
-      if (ev.target.classList.contains("rf-veil") || b?.dataset.rf === "close") return this.close(el);
-      if (b?.dataset.rf === "open" && pageUuid) {
+      const act = b?.dataset.rf;
+      // Quand le joueur doit choisir, un clic à côté ne ferme pas (il perdrait l'aide sans le vouloir)
+      if (ev.target.classList.contains("rf-veil") && !data.choice) return this.close(el);
+      if (act === "close") return this.close(el);
+      if (act === "open") {
+        const uuid = el.dataset.page || pageUuid;
+        if (!uuid) return;
         this.close(el);
-        const page = await fromUuid(pageUuid);
+        const page = await fromUuid(uuid);
         page?.parent?.sheet?.render(true, { pageId: page.id });
+      }
+      if (act === "skip") {
+        if (!data.preview) game.socket.emit(SOCKET, { type: "fileSkip", userId: game.user.id, offerId: data.offerId });
+        return this.close(el);
+      }
+      if (act === "file") {
+        if (data.preview) {
+          ui.notifications.info("Aperçu : rien n'est rangé.");
+          return this.close(el);
+        }
+        this.pending(el, true);
+        game.socket.emit(SOCKET, { type: "fileRequest", userId: game.user.id, offerId: data.offerId });
+        // Le MJ doit répondre ; sinon on rend la main au joueur
+        el._rfTimer = setTimeout(() => {
+          this.pending(el, false);
+          ui.notifications.warn("Le MJ n'a pas répondu : réessayez dans un instant.");
+        }, 8000);
       }
     });
     document.body.append(el);
@@ -271,8 +371,37 @@ const Reveal = {
   },
 
   close(el) {
+    clearTimeout(el._rfTimer);
     el.classList.add("rf-leaving");
     setTimeout(() => el.remove(), 350);
+  },
+
+  /** Boutons grisés pendant que le MJ range la copie */
+  pending(el, on) {
+    clearTimeout(on ? undefined : el._rfTimer);
+    el.querySelectorAll(".rf-choice button").forEach((b) => { b.disabled = on; });
+    el.querySelector(".rf-choice")?.classList.toggle("rf-wait", on);
+  },
+
+  /** Réponse du MJ à « Ranger » */
+  filed(data) {
+    const el = document.getElementById("rf-reveal");
+    if (!el || el.dataset.offer !== (data.offerId ?? "")) return;
+    clearTimeout(el._rfTimer);
+    this.pending(el, false);
+    const foot = el.querySelector(".rf-doc-foot");
+    if (!foot) return;
+    if (data.ok) {
+      el.dataset.page = data.pageUuid ?? "";
+      foot.classList.remove("rf-choice");
+      foot.innerHTML = `${data.pageUuid ? `<button type="button" data-rf="open"><i class="fa-solid fa-book-open"></i> Ouvrir dans mon journal d'aventure</button>` : ""}
+        <button type="button" data-rf="close"><i class="fa-solid fa-check"></i> Rangé — fermer</button>`;
+    } else {
+      const why = data.reason === "expired" ? "Cette remise n'est plus disponible : demandez au MJ de vous la remettre de nouveau."
+        : data.reason === "nobook" ? "Vous n'avez pas de journal d'aventure : prévenez le MJ."
+        : "Le rangement a échoué : prévenez le MJ.";
+      ui.notifications.warn(why);
+    }
   }
 };
 
@@ -355,6 +484,20 @@ class DistributeApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   _onRender(context, options) {
     super._onRender(context, options);
+    // « Laisser le joueur choisir » n'a de sens que si on range et qu'on fait apparaître le document
+    const file = this.element.querySelector('input[name="file"]');
+    const reveal = this.element.querySelector('input[name="reveal"]');
+    const choice = this.element.querySelector('input[name="choice"]');
+    if (file && reveal && choice) {
+      const syncChoice = () => {
+        const ok = file.checked && reveal.checked;
+        choice.disabled = !ok;
+        if (!ok) choice.checked = false;
+      };
+      file.addEventListener("change", syncChoice);
+      reveal.addEventListener("change", syncChoice);
+      syncChoice();
+    }
     const zone = this.element.querySelector(".rf-drop");
     if (!zone) return;
     zone.addEventListener("dragover", (ev) => { ev.preventDefault(); zone.classList.add("rf-over"); });
@@ -403,6 +546,7 @@ class DistributeApp extends HandlebarsApplicationMixin(ApplicationV2) {
         note: fd.note.value.trim(),
         sender: fd.sender?.value.trim() ?? "",
         file: fd.file.checked,
+        choice: fd.choice?.checked ?? false,
         reveal: fd.reveal.checked,
         grant: fd.grant?.checked ?? false,
         preview: fd.preview.checked

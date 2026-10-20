@@ -24,3 +24,5 @@ Dossier des journaux d'aventure, création automatique, trace dans le chat, son 
 
 ## Crédits
 Polices Cinzel, Cinzel Decorative et EB Garamond (SIL Open Font License). Code sous licence MIT.
+
+- **Le joueur peut choisir lui-même** : avec la coche « Laisser le joueur choisir de la ranger ou non », la missive arrive avec deux boutons, « Ranger dans mon journal d'aventure » et « Ne pas ranger ». Rien n'est rangé tant qu'il n'a pas choisi, et le MJ en garde la trace dans le chat. Si le MJ recharge sa page avant le choix, la remise est perdue (il suffit de la remettre).

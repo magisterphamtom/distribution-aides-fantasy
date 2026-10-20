@@ -59,6 +59,7 @@
   <fieldset class="rf-opts">
     <label><input type="checkbox" name="reveal" checked> Faire apparaître le document à l'écran</label>
     <label><input type="checkbox" name="file" checked> Ranger une copie dans leur journal d'aventure</label>
+    <label class="rf-sub"><input type="checkbox" name="choice"> Laisser le joueur choisir de la ranger ou non</label>
     {{#if h}}{{#unless (eq h.kind "image")}}
       <label><input type="checkbox" name="grant"> Leur donner aussi l'accès en lecture au journal d'origine</label>
     {{/unless}}{{/if}}
