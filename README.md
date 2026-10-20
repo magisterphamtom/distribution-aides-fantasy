@@ -14,6 +14,7 @@ Version fantasy du module « Distribution d'aides de jeu » de la campagne Monta
 - Trace privée dans le chat, son à la réception.
 
 - **Depuis une image affichée** : le MJ voit, dans la barre de zoom de toute fenêtre d'image (loupes, antenne), une enveloppe « Remettre aux joueurs (missive) ». Elle ouvre la fenêtre de remise avec cette image et son titre déjà choisis.
+- **Avec Handout Ping Viewer ou l'ancien Zoom & Pan actifs** : leur barre de zoom garde la main (pas de double barre ni de double ping) et le module y ajoute seulement l'enveloppe « Remettre aux joueurs ». Pour tout avoir dans un seul module, désactivez-les.
 ## Ouvrir la fenêtre
 - Bouton dans la barre d'outils de gauche (jetons), clic droit sur une image ou une page de journal, ou macro :
 ```js

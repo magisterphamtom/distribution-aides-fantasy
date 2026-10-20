@@ -39,14 +39,54 @@ Hooks.once("ready", () => {
   }
 });
 
+/** Un autre module gère déjà zoom et pings sur les fenêtres d'image (Handout Ping Viewer, ancien Zoom & Pan). */
+function foreignZoom() {
+  return !!(game.modules.get("handout-ping-viewer")?.active || game.modules.get("image-zoom-pan")?.active);
+}
+
+/**
+ * Ajoute seulement le bouton « Remettre aux joueurs » dans la barre d'un autre module de zoom
+ * (ou dans une petite barre à nous s'il n'y en a pas).
+ */
+function addEnvelope(wrapper, distribute) {
+  if (!wrapper || wrapper.querySelector(".dh-env-btn")) return;
+  let tries = 0;
+  const place = () => {
+    if (wrapper.querySelector(".dh-env-btn")) return;
+    let bar = wrapper.querySelector(".izp-toolbar, .dh-zoom-bar");
+    if (!bar && tries++ < 10) return setTimeout(place, 100); // l'autre module peut se brancher un peu après nous
+    if (!bar) {
+      wrapper.classList.add("dh-zoom-wrap");
+      bar = document.createElement("div");
+      bar.className = "dh-zoom-bar";
+      wrapper.append(bar);
+    }
+    const foreign = bar.classList.contains("izp-toolbar");
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `${foreign ? "izp-btn" : "dh-zoom-btn"} dh-env-btn`;
+    b.dataset.tooltip = "Remettre aux joueurs (missive)";
+    b.title = "Remettre aux joueurs (missive)";
+    b.setAttribute("aria-label", "Remettre aux joueurs (missive)");
+    b.innerHTML = '<i class="fa-solid fa-envelope-open-text"></i>';
+    b.addEventListener("click", (ev) => { ev.stopPropagation(); distribute(); });
+    bar.append(b);
+  };
+  place();
+}
+
 Hooks.on("renderImagePopout", (app, html) => {
-  if (!zoomEnabled()) return;
   const root = html instanceof HTMLElement ? html : html?.[0] ?? app.element;
   const img = root?.querySelector("img");
   if (!img) return;
   const src = img.getAttribute("src") ?? app.options?.src;
   const title = app.options?.window?.title ?? app.title ?? "";
   const distribute = game.user.isGM && src ? () => game.modules.get(ZOOM_ID)?.api?.openImage?.(src, title) : null;
+  // Pas de double barre : si un autre module gère déjà le zoom, on y ajoute seulement l'enveloppe
+  if (foreignZoom() || !zoomEnabled()) {
+    if (distribute) addEnvelope(img.parentElement, distribute);
+    return;
+  }
   attachZoom(img.parentElement, img, { app, src, title, ping: true, broadcast: game.user.isGM, distribute });
 });
 
