@@ -2,7 +2,7 @@
   "id": "distribution-aides-fantasy",
   "title": "Distribution d'aides de jeu — Fantasy",
   "description": "Le MJ remet une aide de jeu (image, page ou journal) à un ou plusieurs joueurs : un parchemin scellé à la cire tombe à l'écran, le sceau se brise et le parchemin se déroule pour révéler le document, qui se range tout seul dans leur journal d'aventure. Zoom à la molette, déplacement, pings partagés et vue forcée par le MJ sur toutes les images. Pensé pour D&D 5e, fonctionne avec tout système. Foundry v13 / v14.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "authors": [
     {
       "name": "magisterphamtom",
@@ -22,7 +22,7 @@
   ],
   "url": "https://github.com/magisterphamtom/distribution-aides-fantasy",
   "manifest": "https://github.com/magisterphamtom/distribution-aides-fantasy/releases/latest/download/module.json",
-  "download": "https://github.com/magisterphamtom/distribution-aides-fantasy/releases/download/v1.1.0/module.zip",
+  "download": "https://github.com/magisterphamtom/distribution-aides-fantasy/releases/download/v1.2.0/module.zip",
   "bugs": "https://github.com/magisterphamtom/distribution-aides-fantasy/issues",
   "readme": "https://github.com/magisterphamtom/distribution-aides-fantasy/blob/main/README.md",
   "license": "https://github.com/magisterphamtom/distribution-aides-fantasy/blob/main/LICENSE",

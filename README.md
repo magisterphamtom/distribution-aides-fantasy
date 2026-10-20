@@ -13,6 +13,7 @@ Version fantasy du module « Distribution d'aides de jeu » de la campagne Monta
 - **Zoom** à la molette, déplacement au clic-glissé, pings partagés, vue forcée par le MJ sur toutes les images.
 - Trace privée dans le chat, son à la réception.
 
+- **Depuis une image affichée** : le MJ voit, dans la barre de zoom de toute fenêtre d'image (loupes, antenne), une enveloppe « Remettre aux joueurs (missive) ». Elle ouvre la fenêtre de remise avec cette image et son titre déjà choisis.
 ## Ouvrir la fenêtre
 - Bouton dans la barre d'outils de gauche (jetons), clic droit sur une image ou une page de journal, ou macro :
 ```js

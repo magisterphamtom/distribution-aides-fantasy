@@ -54,7 +54,7 @@ Hooks.once("ready", () => {
     }
   });
   const mod = game.modules.get(ID);
-  if (mod) mod.api = { open: (doc) => DistributeApp.open(doc), distribute };
+  if (mod) mod.api = { open: (doc) => DistributeApp.open(doc), openImage: (src, title) => DistributeApp.openImage(src, title), distribute };
 });
 
 
@@ -448,6 +448,16 @@ class DistributeApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!game.user.isGM) return;
     if (!this.instance) this.instance = new DistributeApp();
     if (doc) await this.instance.setDocument(doc);
+    this.instance.render({ force: true });
+  }
+
+  /** Ouvre la fenêtre de remise avec une image déjà choisie (bouton de la fenêtre d'image). */
+  static async openImage(src, title) {
+    if (!game.user.isGM || !src) return;
+    if (!this.instance) this.instance = new DistributeApp();
+    const name = String(title || "").trim()
+      || decodeURIComponent(src.split("/").pop().replace(/\.[^.]+$/, "")).replace(/[_-]+/g, " ");
+    this.instance.handout = { kind: "image", src, title: name, preview: src, type: "image" };
     this.instance.render({ force: true });
   }
 

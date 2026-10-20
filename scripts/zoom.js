@@ -46,12 +46,13 @@ Hooks.on("renderImagePopout", (app, html) => {
   if (!img) return;
   const src = img.getAttribute("src") ?? app.options?.src;
   const title = app.options?.window?.title ?? app.title ?? "";
-  attachZoom(img.parentElement, img, { app, src, title, ping: true, broadcast: game.user.isGM });
+  const distribute = game.user.isGM && src ? () => game.modules.get(ZOOM_ID)?.api?.openImage?.(src, title) : null;
+  attachZoom(img.parentElement, img, { app, src, title, ping: true, broadcast: game.user.isGM, distribute });
 });
 
 /**
  * Branche le zoom sur une image.
- * opts : { app?, src, title, ping, broadcast }
+ * opts : { app?, src, title, ping, broadcast, distribute? }
  */
 export function attachZoom(wrapper, img, opts = {}) {
   if (!wrapper || !img || img.dataset.rfZoom === "1") return null;
@@ -125,6 +126,7 @@ export function attachZoom(wrapper, img, opts = {}) {
   btn("fa-solid fa-arrows-rotate", "Vue d'origine", reset);
   if (opts.openFull) btn("fa-solid fa-up-right-and-down-left-from-center", "Ouvrir en grand", opts.openFull);
   if (opts.broadcast) btn("fa-solid fa-tower-broadcast", "Forcer cette vue chez les joueurs", () => broadcastView(ctl));
+  if (opts.distribute) btn("fa-solid fa-envelope-open-text", "Remettre aux joueurs (missive)", opts.distribute);
   wrapper.append(bar);
   apply();
   return ctl;
